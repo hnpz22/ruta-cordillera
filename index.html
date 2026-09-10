@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruta Cordillera</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Anton&family=Barlow:wght@400;500;600;700;800&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.4/confetti.min.js"></script>
+<script src="https://unpkg.com/convex@1.45.0/dist/browser.bundle.js"></script>
+<style>
+  :root{
+    --paper:#dda84c;
+    --paper-2:#cd9539;
+    --ink:#241a12;
+    --panel:#2c1f13;
+    --panel-2:#3c2c19;
+    --cream:#f5e8c8;
+    --cream-dim:#d8c69e;
+    --red:#b8402f;
+    --teal:#2f7f78;
+    --amber:#c97c26;
+    --blue:#2c4a86;
+    --flag-yellow:#eeb62c;
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+
+  html{ overflow-x:hidden; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Barlow', 'Helvetica Neue', Arial, sans-serif;
+    overflow-x:hidden;
+    max-width:100vw;
+  }
+  button, a, input{ touch-action:manipulation; }
+
+  h1,h2,h3{ text-wrap:balance; margin:0; }
+
+  .staff{
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent 27px,
+      #00000024 27px, #00000024 28px,
+      transparent 28px, transparent 33px,
+      #00000024 33px, #00000024 34px,
+      transparent 34px, transparent 39px,
+      #00000024 39px, #00000024 40px,
+      transparent 40px, transparent 45px,
+      #00000024 45px, #00000024 46px,
+      transparent 46px, transparent 51px,
+      #00000024 51px, #00000024 52px,
+      transparent 52px, transparent 260px
+    );
+    background-size: 100% 260px;
+  }
+
+  .app{ max-width:640px; margin:0 auto; padding:0 0 48px; position:relative; }
+
+  /* ---------- hero ---------- */
+  .hero{ padding:22px 18px 14px; position:relative; overflow:hidden; }
+  .flagribbon{ position:absolute; top:-30px; right:-40px; width:170px; height:170px; z-index:0; opacity:.85; }
+  .hero-inner{ position:relative; z-index:1; }
+  .eyebrow{
+    font-family:'Anton', sans-serif; letter-spacing:.14em; font-size:12px;
+    color:var(--panel); text-transform:uppercase; margin:0 0 2px;
+  }
+  .wordmark{
+    font-family:'Bungee', 'Anton', sans-serif;
+    font-size:clamp(34px, 10vw, 48px);
+    line-height:.92;
+    color:var(--ink);
+    -webkit-text-stroke: 1px var(--ink);
+    display:inline-block;
+  }
+  .wordmark .cord{ color:var(--red); }
+  .sub{
+    margin:8px 0 0; font-size:14px; font-weight:600; color:var(--panel);
+    letter-spacing:.02em;
+  }
+  .venue{ font-size:12px; color:var(--panel); opacity:.8; margin:2px 0 0; }
+
+  .whoami{
+    margin-top:14px; display:flex; align-items:center; gap:10px;
+    background:var(--panel); color:var(--cream); border-radius:10px;
+    padding:9px 12px; font-size:13px; font-weight:600;
+  }
+  .whoami .avatar{
+    width:26px; height:26px; border-radius:50%; background:var(--flag-yellow); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif;
+    font-size:12px; flex:none;
+  }
+  .whoami .name{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .whoami button{
+    background:none; border:1px solid var(--cream-dim); color:var(--cream-dim);
+    border-radius:7px; padding:5px 9px; font-size:11px; font-weight:700; cursor:pointer;
+    font-family:'Barlow',sans-serif;
+  }
+  .whoami button:hover{ border-color:var(--cream); color:var(--cream); }
+  .liveflag{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--cream-dim); }
+  .liveflag .dot{ width:7px; height:7px; border-radius:50%; background:#7fbf6a; flex:none; }
+  .liveflag.off .dot{ background:#a08a5a; }
+
+  /* ---------- nav ---------- */
+  .daytabs, .viewtabs{
+    display:flex; gap:8px; padding:10px 18px 0; flex-wrap:wrap;
+  }
+  .viewtabs{ padding-top:8px; padding-bottom:14px; }
+  .daybtn, .viewbtn{
+    font-family:'Anton', sans-serif; letter-spacing:.04em; font-size:14px;
+    background:var(--panel-2); color:var(--cream-dim); border:none; border-radius:9px;
+    padding:9px 14px; cursor:pointer; transition:background .12s, color .12s;
+  }
+  .viewbtn{ font-size:12px; padding:7px 11px; }
+  .daybtn:hover, .viewbtn:hover{ background:#4a3620; color:var(--cream); }
+  .daybtn.active, .viewbtn.active{ background:var(--ink); color:var(--flag-yellow); }
+  .daybtn:focus-visible, .viewbtn:focus-visible, button:focus-visible, input:focus-visible, a:focus-visible{
+    outline:2px solid var(--flag-yellow); outline-offset:2px;
+  }
+
+  main{ padding:4px 18px 8px; }
+
+  .viewhead{ margin:6px 2px 14px; }
+  .viewhead h2{
+    font-family:'Anton', sans-serif; font-size:22px; letter-spacing:.01em; color:var(--ink);
+  }
+  .viewhead p{ margin:4px 0 0; font-size:13px; color:var(--panel); font-weight:600; opacity:.85; }
+
+  .dayhead{ font-family:'Anton', sans-serif; font-size:16px; margin:18px 2px 10px; color:var(--panel); }
+
+  /* ---------- spotify link ---------- */
+  .spotifylink{
+    display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:#8fd9c4; font-weight:700;
+    text-decoration:none; margin:4px 0;
+  }
+  .spotifylink svg{ width:12px; height:12px; flex:none; }
+  .spotifylink:hover{ color:var(--flag-yellow); }
+
+  /* ---------- act card (line-up) ---------- */
+  .actlist{ display:flex; flex-direction:column; gap:10px; }
+  .act{
+    background:var(--panel); border-radius:12px; padding:12px 13px;
+    display:flex; gap:11px; align-items:flex-start;
+    border-left:6px solid var(--red);
+  }
+  .act .meta{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .act .stagebadge{
+    font-family:'Anton', sans-serif; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--flag-yellow); opacity:.9;
+  }
+  .act .time{ font-size:12px; color:var(--cream-dim); font-variant-numeric:tabular-nums; font-weight:600; }
+  .act .artist{ font-size:17px; font-weight:800; color:var(--cream); margin:2px 0 0; }
+  .act .fans{ display:flex; gap:4px; margin-top:5px; flex-wrap:wrap; }
+  .fan-chip{
+    background:#00000040; color:var(--cream-dim); font-size:10px; font-weight:700;
+    border-radius:20px; padding:2px 7px; font-family:'Barlow',sans-serif;
+  }
+  .jumpbtn{
+    flex:none; background:none; border:1px solid var(--cream-dim); color:var(--cream-dim);
+    border-radius:8px; padding:10px 12px; min-height:44px; font-size:11.5px; font-weight:700; cursor:pointer;
+    font-family:'Barlow',sans-serif; white-space:nowrap; align-self:center;
+  }
+  .jumpbtn:hover{ border-color:var(--flag-yellow); color:var(--flag-yellow); }
+  .lineup-tag{
+    display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; margin-top:6px;
+    padding:3px 8px; border-radius:20px; background:#00000040; color:var(--cream-dim); align-self:flex-start;
+  }
+  .lineup-tag.mine{ background:var(--flag-yellow); color:var(--ink); }
+
+  /* ---------- franja / resultados card ---------- */
+  .franja{ margin-bottom:16px; }
+  .reveal{ opacity:1; animation: cardIn .4s ease-out backwards; animation-delay: var(--reveal-delay, 0ms); }
+  @keyframes cardIn{ from{ transform:translateY(10px); } to{ transform:translateY(0); } }
+  .franja-time{
+    font-family:'Anton', sans-serif; font-size:13px; color:var(--panel); letter-spacing:.03em;
+    margin:0 0 6px 2px;
+  }
+  .franja-row{ display:grid; gap:9px; grid-template-columns:repeat(auto-fit, minmax(128px,1fr)); }
+  .opt{
+    background:var(--panel); border-radius:12px; padding:11px 12px 12px; position:relative;
+    border-top:4px solid var(--red); display:flex; flex-direction:column;
+  }
+  .opt.winning{ outline:2px solid var(--flag-yellow); outline-offset:-2px; }
+  .opt .crown{ position:absolute; top:-11px; right:8px; width:22px; height:22px; }
+  .opt .stagebadge{ font-family:'Anton',sans-serif; font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:var(--flag-yellow); opacity:.9; }
+  .opt .artist{ font-size:14.5px; font-weight:800; color:var(--cream); margin:2px 0 0; line-height:1.15; }
+  .opt .time{ font-size:11px; color:var(--cream-dim); font-variant-numeric:tabular-nums; }
+  .footnote-vote{ font-size:11px; color:var(--panel); font-weight:700; margin:4px 2px 0; }
+
+  /* ---------- choose buttons (shared wizard + resultados) ---------- */
+  .choosebtn{
+    margin-top:9px; background:var(--panel-2); color:var(--cream); border:none; border-radius:9px;
+    padding:10px; min-height:44px; font-family:'Anton',sans-serif; letter-spacing:.03em; font-size:13.5px; cursor:pointer;
+  }
+  .choosebtn.small{ padding:7px; min-height:38px; font-size:11.5px; margin-top:8px; }
+  .choosebtn:hover{ background:#4a3620; }
+  .choosebtn.chosen{ background:var(--flag-yellow); color:var(--ink); }
+  .choosebtn.chosen:hover{ background:#f0c452; }
+
+  .pillrow{ display:flex; gap:9px; margin-bottom:6px; }
+  .pill{
+    flex:1; background:none; border:2px solid var(--panel); color:var(--panel); border-radius:20px;
+    padding:11px 6px; min-height:44px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Barlow',sans-serif;
+    transition: transform .18s var(--ease-bounce);
+  }
+  .pill:hover{ border-color:var(--ink); }
+  .pill.chosen{ background:var(--ink); border-color:var(--ink); color:var(--flag-yellow); }
+  .pill.pulse{ animation: choosePulse .35s var(--ease-bounce); }
+
+  /* ---------- wizard ---------- */
+  .wizhead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 2px 8px; }
+  .steplabel{ font-family:'Anton',sans-serif; font-size:13px; color:var(--panel); letter-spacing:.03em; }
+  .skiplink{
+    background:none; border:none; cursor:pointer; font-family:'Barlow',sans-serif; font-weight:700;
+    font-size:11px; color:var(--panel); opacity:.7; text-decoration:underline; white-space:nowrap;
+  }
+  .progresstrack{ height:6px; background:#00000022; border-radius:4px; overflow:hidden; margin:0 2px 16px; }
+  .progressfill{ height:100%; background:var(--red); border-radius:4px; }
+  .wiz-time{ font-family:'Anton',sans-serif; font-size:15px; color:var(--ink); margin:0 2px 10px; }
+  .wiz-row{ display:grid; gap:11px; grid-template-columns:repeat(auto-fit, minmax(132px,1fr)); margin-bottom:14px; }
+  .wizcard{
+    background:var(--panel); border-radius:14px; padding:14px; border-top:5px solid var(--red);
+    display:flex; flex-direction:column;
+    transition: transform .18s var(--ease-bounce), box-shadow .25s ease, opacity .2s ease, filter .2s ease;
+  }
+  .wizcard.chosen{
+    box-shadow: 0 0 0 3px var(--flag-yellow), 0 0 22px 3px var(--card-glow, rgba(238,182,44,.4));
+  }
+  .wizcard.dimmed{ opacity:.5; filter:saturate(.45); }
+  .wizcard.pulse{ animation: choosePulse .4s var(--ease-bounce); }
+  @keyframes choosePulse{ 0%{ transform:scale(1); } 45%{ transform:scale(1.055); } 100%{ transform:scale(1); } }
+  .choosebtn.pulse{ animation: choosePulse .35s var(--ease-bounce); }
+  .wizcard .stagebadge{ font-family:'Anton',sans-serif; font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--flag-yellow); opacity:.9; }
+  .wizcard .artist{ font-size:18px; font-weight:800; color:var(--cream); margin:2px 0 0; line-height:1.15; }
+  .wizcard .time{ font-size:12px; color:var(--cream-dim); font-variant-numeric:tabular-nums; }
+  .wizcard .tally{ font-size:11px; color:var(--cream-dim); font-weight:700; margin-top:6px; }
+  .wiznav{ display:flex; gap:10px; margin-top:14px; }
+  .navbtn{
+    flex:1; background:var(--ink); color:var(--flag-yellow); border:none; border-radius:10px; padding:13px;
+    font-family:'Anton',sans-serif; font-size:14px; letter-spacing:.03em; cursor:pointer;
+  }
+  .navbtn.secondary{ background:var(--panel-2); color:var(--cream); }
+  .navbtn:disabled{ opacity:.35; cursor:default; }
+  .navbtn:hover:not(:disabled){ background:#3a2a18; }
+  .navbtn.secondary:hover:not(:disabled){ background:#4a3620; }
+
+  .transitioncard{
+    background:var(--panel); border-radius:16px; padding:38px 22px; text-align:center;
+    animation: dayGlow 1.8s ease-in-out infinite alternate;
+  }
+  @keyframes dayGlow{ from{ box-shadow:0 0 0 rgba(238,182,44,0); } to{ box-shadow:0 0 44px 6px rgba(238,182,44,.32); } }
+  .transitioncard .big{ font-family:'Bungee',sans-serif; font-size:24px; color:var(--flag-yellow); margin-bottom:10px; }
+  .transitioncard p{ color:var(--cream-dim); font-size:13.5px; font-weight:600; margin:0; }
+
+  /* ---------- plan view ---------- */
+  .planstats{ display:flex; gap:10px; margin-bottom:14px; }
+  .stat{ background:var(--panel); border-radius:10px; padding:9px 13px; flex:1; }
+  .stat .n{ font-family:'Anton',sans-serif; font-size:20px; color:var(--flag-yellow); }
+  .stat .l{ font-size:10.5px; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.04em; }
+  .plan-item{
+    display:flex; gap:11px; align-items:center; background:var(--panel); border-radius:11px;
+    padding:10px 13px; margin-bottom:8px; border-left:6px solid var(--red);
+  }
+  .plan-item .time{ font-family:'Anton',sans-serif; font-size:13px; color:var(--flag-yellow); width:78px; flex:none; font-variant-numeric:tabular-nums; }
+  .plan-item .info .artist{ font-size:15px; font-weight:800; color:var(--cream); }
+  .plan-item .info .stagebadge{ font-family:'Anton',sans-serif; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--cream-dim); }
+  .plan-item .likes{ margin-left:auto; font-size:11px; color:var(--cream-dim); font-weight:700; flex:none; }
+  .plannote{ font-size:12px; color:var(--panel); opacity:.8; margin-top:10px; font-weight:600; }
+
+  /* ---------- mapa view ---------- */
+  .mapwrap{ background:var(--panel); border-radius:14px; padding:14px; }
+  .mapcaption{ font-size:11.5px; color:var(--cream-dim); margin:10px 2px 0; line-height:1.5; }
+  .maplegend{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+  .legit{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--cream); font-weight:700; }
+  .legdot{ width:11px; height:11px; border-radius:3px; flex:none; }
+
+  /* ---------- divider ornament ---------- */
+  .ornament{ display:flex; justify-content:center; gap:16px; margin:20px 0 6px; opacity:.55; }
+  .ornament svg{ width:16px; height:16px; }
+
+  /* ---------- footer ---------- */
+  .foot{ padding:10px 18px 0; }
+  .skyline{ width:100%; height:auto; display:block; }
+  .foot-note{ text-align:center; font-size:11px; color:var(--panel); opacity:.75; margin:8px 0 0; font-weight:600; }
+
+  /* ---------- modal ---------- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:#0a0603cc; display:flex; align-items:center; justify-content:center;
+    padding:20px; z-index:50;
+  }
+  .modal{
+    background:var(--paper); border-radius:16px; padding:26px 22px; max-width:360px; width:100%;
+    border:4px solid var(--ink); max-height:90vh; overflow-y:auto;
+  }
+  .modal h3{ font-family:'Anton',sans-serif; font-size:20px; color:var(--ink); }
+  .modal p{ font-size:13px; color:var(--panel); margin:8px 0 16px; font-weight:600; line-height:1.4; }
+  .modal input{
+    width:100%; font-size:16px; padding:11px 12px; border-radius:9px; border:2px solid var(--ink);
+    background:var(--cream); color:var(--ink); font-family:'Barlow',sans-serif; font-weight:600;
+  }
+  .modal input:focus-visible{ outline:2px solid var(--red); outline-offset:1px; }
+  .modal button{
+    margin-top:12px; width:100%; background:var(--ink); color:var(--flag-yellow); border:none;
+    font-family:'Anton',sans-serif; letter-spacing:.03em; font-size:15px; padding:12px; border-radius:9px;
+    cursor:pointer;
+  }
+  .modal button:hover{ background:#3a2a18; }
+  [hidden]{ display:none !important; }
+
+  /* ---------- segmented progress ---------- */
+  .segbar{ display:flex; gap:4px; margin:0 2px 16px; }
+  .seg{ flex:1; height:6px; border-radius:4px; background:#00000022; overflow:hidden; position:relative; }
+  .seg.filled{ background:var(--red); }
+  .seg.current::after{
+    content:''; position:absolute; inset:0; background:var(--red); border-radius:4px;
+    animation: segPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes segPulse{ 0%,100%{ opacity:.35; } 50%{ opacity:1; } }
+
+  /* ---------- directional step transitions ---------- */
+  .wizbody{ opacity:1; }
+  .slide-next{ animation: slideInRight .32s var(--ease-bounce); }
+  .slide-prev{ animation: slideInLeft .32s var(--ease-bounce); }
+  @keyframes slideInRight{ from{ transform:translateX(28px); } to{ transform:translateX(0); } }
+  @keyframes slideInLeft{ from{ transform:translateX(-28px); } to{ transform:translateX(0); } }
+
+  /* ---------- crown: pop-in + ambient glow + margin label ---------- */
+  .opt{ z-index:0; }
+  .opt.mine{
+    box-shadow: 0 0 0 3px var(--flag-yellow), 0 0 22px 3px var(--card-glow, rgba(238,182,44,.4));
+  }
+  .opt.winning{ position:relative; }
+  .opt.winning::before{
+    content:''; position:absolute; inset:-6px; border-radius:16px; z-index:-1;
+    background:radial-gradient(circle, rgba(238,182,44,.35), transparent 70%);
+    animation: crownGlow 2.1s ease-in-out infinite;
+  }
+  @keyframes crownGlow{ 0%,100%{ opacity:.5; } 50%{ opacity:1; } }
+  .crown{ opacity:1; animation: crownPop .55s var(--ease-bounce); transform-origin:center; }
+  @keyframes crownPop{
+    0%{ transform:scale(.4) rotate(-14deg); }
+    60%{ transform:scale(1.22) rotate(6deg); }
+    100%{ transform:scale(1) rotate(0deg); }
+  }
+  .marginlabel{
+    font-family:'Anton', sans-serif; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--flag-yellow); margin-top:2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .transitioncard{ animation:none; }
+    .opt.winning::before{ animation:none; opacity:.7; }
+    .seg.current::after{ animation:none; opacity:1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app staff">
+
+  <header class="hero">
+    <svg class="flagribbon" viewBox="0 0 100 100" aria-hidden="true">
+      <polygon points="100,0 100,55 45,0" fill="#eeb62c" opacity="0.9"/>
+      <polygon points="100,55 100,80 70,0 45,0" fill="#2c4a86" opacity="0.85"/>
+      <polygon points="100,80 100,100 90,100 70,0" fill="#b8402f" opacity="0.85"/>
+    </svg>
+    <div class="hero-inner">
+      <p class="eyebrow">El plan del parche</p>
+      <h1 class="wordmark">FESTIVAL<br><span class="cord">CORDILLERA</span></h1>
+      <p class="sub">Vota qué artista quieres ver y armamos la ruta</p>
+      <p class="venue">Parque Simón Bolívar · Bogotá · 12–13 sept</p>
+    </div>
+    <div class="whoami" id="whoami"></div>
+  </header>
+
+  <div id="navwrap" hidden>
+    <nav class="daytabs" id="daytabs"></nav>
+    <nav class="viewtabs" id="viewtabs"></nav>
+  </div>
+
+  <main id="main"></main>
+
+  <div class="ornament" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path d="M12 2c2 3 2 5 0 7-2-2-2-4 0-7z" fill="#241a12"/><path d="M12 9c2 3 2 5 0 7-2-2-2-4 0-7z" fill="#241a12"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.6H19l-4.6 3.4 1.8 5.6L12 14.2 7.8 17.6l1.8-5.6L5 8.6h5.2z" fill="#241a12"/></svg>
+    <svg viewBox="0 0 24 24"><path d="M12 2c-3 4-6 7-6 11a6 6 0 0012 0c0-4-3-7-6-11z" fill="#241a12"/></svg>
+  </div>
+
+  <footer class="foot">
+    <svg class="skyline" viewBox="0 0 400 40" preserveAspectRatio="none" aria-hidden="true">
+      <polygon points="0,40 0,26 40,6 80,22 120,10 160,24 200,4 240,20 280,12 320,26 360,8 400,22 400,40" fill="#241a12"/>
+    </svg>
+    <p class="foot-note">Hecho para el parche · datos guardados en vivo mientras todos votan</p>
+  </footer>
+</div>
+
+<div class="modal-backdrop" id="nameModal" hidden>
+  <div class="modal">
+    <h3>¿Quién eres?</h3>
+    <p>Escribe tu nombre para votar. Tus amigos van a ver tus votos cuando entren al mismo link.</p>
+    <input id="nameInput" type="text" placeholder="Tu nombre" maxlength="24" autocomplete="off">
+    <button id="nameSubmit">Entrar al parche</button>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // Reemplaza esto por la URL de tu deployment de Convex (la imprime `npx convex dev`
+  // o `npx convex deploy`, algo como "https://algun-nombre-123.convex.cloud").
+  var CONVEX_URL = "REEMPLAZAR_CON_TU_CONVEX_URL";
+
+  var STAGES = {
+    cordillera:{ name:'Cordillera', tag:'Escenario Cordillera', color:'#b8402f' },
+    aconcagua:{ name:'Aconcagua', tag:'Escenario Aconcagua · Grupo AVAL', color:'#2f7f78' },
+    cotopaxi:{ name:'Cotopaxi', tag:'Escenario Cotopaxi', color:'#c97c26' },
+    cocuy:{ name:'Cocuy', tag:'Escenario Cocuy', color:'#2c4a86' }
+  };
+
+  function A(day, stage, artist, t, start, end){
+    return { id: day+'-'+stage+'-'+start, day:day, stage:stage, artist:artist, t:t, start:start, end:end };
+  }
+
+  var ACTS = [
+    A('sab','cordillera','Kei Linch','14:15–15:00',855,900),
+    A('sab','cordillera','Dread Mar I','15:45–16:45',945,1005),
+    A('sab','cordillera','Fobia','17:45–18:45',1065,1125),
+    A('sab','cordillera','Andrés Calamaro','20:00–21:15',1200,1275),
+    A('sab','cordillera','Beéle','22:30–23:45',1350,1425),
+
+    A('sab','aconcagua','Nelda Piña','15:00–15:45',900,945),
+    A('sab','aconcagua','Ed Maverick','16:45–17:45',1005,1065),
+    A('sab','aconcagua','Cultura Profética','18:45–20:00',1125,1200),
+    A('sab','aconcagua','Grupo Niche','21:15–22:30',1275,1350),
+    A('sab','aconcagua','Sean Paul','23:45–01:00',1425,1500),
+
+    A('sab','cotopaxi','Latin Brothers','14:15–15:00',855,900),
+    A('sab','cotopaxi','Emmanuel H','15:45–16:45',945,1005),
+    A('sab','cotopaxi','Ke Personajes','17:45–18:45',1065,1125),
+    A('sab','cotopaxi','Nene del Real','20:00–21:00',1200,1260),
+    A('sab','cotopaxi','Miguel Nateos','22:45–23:45',1365,1425),
+
+    A('sab','cocuy','Paula Pera','15:00–15:45',900,945),
+    A('sab','cocuy','Kapanga','16:45–17:45',1005,1065),
+    A('sab','cocuy','Poligamia','18:45–19:45',1125,1185),
+    A('sab','cocuy','Virus','21:30–22:30',1290,1350),
+    A('sab','cocuy','Lido Pimienta','00:00–01:00',1440,1500),
+
+    A('dom','cordillera','Briela Ojeda','14:30–15:15',870,915),
+    A('dom','cordillera','Draco','16:00–17:00',960,1020),
+    A('dom','cordillera','Andrés Cepeda','18:00–19:15',1080,1155),
+    A('dom','cordillera','Caifanes','20:15–21:30',1215,1290),
+    A('dom','cordillera','Ricky Martin','22:30–23:45',1350,1425),
+
+    A('dom','aconcagua','Estrambóticos','15:15–16:00',915,960),
+    A('dom','aconcagua','Tan Bionica','17:00–18:00',1020,1080),
+    A('dom','aconcagua','Mago de Oz','19:15–20:15',1155,1215),
+    A('dom','aconcagua','Kany García','21:30–22:30',1290,1350),
+    A('dom','aconcagua','Panteón Rococó','23:45–01:00',1425,1500),
+
+    A('dom','cotopaxi','Árbol de Ojos','14:30–15:15',870,915),
+    A('dom','cotopaxi','Los de Adentro','16:00–17:00',960,1020),
+    A('dom','cotopaxi','Dante Spinetta','18:15–19:15',1095,1155),
+    A('dom','cotopaxi','Vicente García','20:15–21:15',1215,1275),
+    A('dom','cotopaxi','Dr. Krápula','22:30–23:30',1350,1410),
+
+    A('dom','cocuy','Flor de Lava','15:15–16:00',915,960),
+    A('dom','cocuy','Jarabe de Palo','17:00–18:00',1020,1080),
+    A('dom','cocuy','Bonka','19:15–20:15',1155,1215),
+    A('dom','cocuy','Diamante Eléctrico','21:30–22:30',1290,1350),
+    A('dom','cocuy','Amigos Invisibles','23:45–01:00',1425,1500)
+  ];
+
+  var DAY_LABEL = { sab:'Sábado 12', dom:'Domingo 13' };
+
+  // ---------- overlap groups → franjas ----------
+  function overlapGroups(day){
+    var acts = ACTS.filter(function(a){ return a.day===day; }).sort(function(a,b){ return a.start-b.start; });
+    var parent = acts.map(function(_,i){ return i; });
+    function find(x){ while(parent[x]!==x){ parent[x]=parent[parent[x]]; x=parent[x]; } return x; }
+    function union(a,b){ var ra=find(a), rb=find(b); if(ra!==rb) parent[ra]=rb; }
+    for(var i=0;i<acts.length;i++){
+      for(var j=i+1;j<acts.length;j++){
+        if(acts[i].start < acts[j].end && acts[i].end > acts[j].start) union(i,j);
+      }
+    }
+    var groups = {};
+    acts.forEach(function(a,i){ var r=find(i); (groups[r] = groups[r]||[]).push(a); });
+    return Object.values(groups).sort(function(g1,g2){
+      return Math.min.apply(null,g1.map(function(a){return a.start;})) - Math.min.apply(null,g2.map(function(a){return a.start;}));
+    });
+  }
+
+  var FRANJAS = {};
+  ['sab','dom'].forEach(function(day){
+    FRANJAS[day] = overlapGroups(day).map(function(g,i){ return { id: day+'-f'+i, day:day, idx:i, acts:g }; });
+  });
+  FRANJAS.sab.concat(FRANJAS.dom).forEach(function(f){ f.acts.forEach(function(act){ act.franjaId = f.id; }); });
+
+  var STEPS = [];
+  FRANJAS.sab.forEach(function(f){ STEPS.push({ type:'franja', franja:f }); });
+  STEPS.push({ type:'transition' });
+  FRANJAS.dom.forEach(function(f){ STEPS.push({ type:'franja', franja:f }); });
+  STEPS.push({ type:'mapa' });
+  STEPS.push({ type:'resultados' });
+  var LAST_STEP = STEPS.length - 1;
+
+  function findStepIndexForFranja(franjaId){
+    for(var i=0;i<STEPS.length;i++){ if(STEPS[i].type==='franja' && STEPS[i].franja.id===franjaId) return i; }
+    return 0;
+  }
+
+  // ---------- identity ----------
+  var myId = localStorage.getItem('rc_id');
+  if(!myId){
+    myId = (crypto.randomUUID ? crypto.randomUUID() : 'f'+Date.now()+Math.random().toString(16).slice(2));
+    localStorage.setItem('rc_id', myId);
+  }
+  var myName = localStorage.getItem('rc_name') || '';
+
+  // ---------- state ----------
+  var state = {
+    onboarded: localStorage.getItem('rc_onboarded') === '1',
+    step: Math.min(Math.max(parseInt(localStorage.getItem('rc_step') || '0', 10) || 0, 0), LAST_STEP),
+    tab: 'resultados',
+    day: 'sab',
+    lastDir: 'next'
+  };
+  var votesRaw = {};      // franjaId -> { friendId: {name, choice} }
+  var votesByArtist = {}; // artistId -> { friendId: name }  (derived)
+  var client = null;
+  var liveMode = false;
+
+  function initials(name){
+    var parts = (name||'?').trim().split(/\s+/);
+    return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
+
+  function minToLabel(m){
+    var mm = ((m % 1440) + 1440) % 1440;
+    var h = Math.floor(mm/60), mi = mm%60;
+    return (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi;
+  }
+
+  function likesFor(artistId){ return votesByArtist[artistId] || {}; }
+  function countFor(artistId){ return Object.keys(likesFor(artistId)).length; }
+
+  function myChoiceFor(franjaId){
+    var f = votesRaw[franjaId];
+    return (f && f[myId]) ? f[myId].choice : null;
+  }
+
+  function totalFriendsVoted(){
+    var set = {};
+    Object.keys(votesRaw).forEach(function(fid){ Object.keys(votesRaw[fid]).forEach(function(f){ set[f]=1; }); });
+    return Object.keys(set).length;
+  }
+
+  function deriveVotesByArtist(){
+    var next = {};
+    FRANJAS.sab.concat(FRANJAS.dom).forEach(function(f){
+      var votes = votesRaw[f.id] || {};
+      Object.keys(votes).forEach(function(fid){
+        var v = votes[fid];
+        if(!v || !v.choice) return;
+        if(v.choice === 'draw'){
+          f.acts.forEach(function(act){ next[act.id] = next[act.id] || {}; next[act.id][fid] = v.name; });
+        } else if(v.choice === 'none'){
+          // sin voto para este bloque
+        } else {
+          next[v.choice] = next[v.choice] || {};
+          next[v.choice][fid] = v.name;
+        }
+      });
+    });
+    votesByArtist = next;
+  }
+
+  function crownSvg(){
+    return '<svg viewBox="0 0 24 24"><polygon points="3,18 3,9 8,13 12,5 16,13 21,9 21,18" fill="#eeb62c"/><rect x="3" y="18" width="18" height="3" fill="#eeb62c"/></svg>';
+  }
+
+  // ---------- sound + haptics + confetti ("juice") ----------
+  var audioCtx = null;
+  function ensureAudio(){
+    if(audioCtx) return audioCtx;
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e){ audioCtx = null; }
+    return audioCtx;
+  }
+  function resumeAudio(){
+    var ctx = ensureAudio();
+    if(ctx && ctx.state === 'suspended'){ ctx.resume().catch(function(){}); }
+  }
+  function tone(ctx, freqStart, freqEnd, t0, duration, type, peak){
+    var osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freqStart, t0);
+    if(freqEnd !== freqStart) osc.frequency.linearRampToValueAtTime(freqEnd, t0 + duration);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(peak || 0.14, t0 + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t0); osc.stop(t0 + duration + 0.02);
+  }
+  function sfxClick(){ var ctx = ensureAudio(); if(!ctx) return; tone(ctx, 150, 150, ctx.currentTime, 0.07, 'square', 0.06); }
+  function sfxChoose(){ var ctx = ensureAudio(); if(!ctx) return; tone(ctx, 420, 620, ctx.currentTime, 0.14, 'sine', 0.15); }
+  function sfxNone(){ var ctx = ensureAudio(); if(!ctx) return; tone(ctx, 320, 260, ctx.currentTime, 0.14, 'sine', 0.10); }
+  function sfxDraw(){
+    var ctx = ensureAudio(); if(!ctx) return; var t0 = ctx.currentTime;
+    tone(ctx, 440, 440, t0, 0.22, 'sine', 0.11);
+    tone(ctx, 554, 554, t0, 0.22, 'sine', 0.11);
+  }
+  function sfxFanfare(){
+    var ctx = ensureAudio(); if(!ctx) return; var t0 = ctx.currentTime;
+    [523.25, 659.25, 783.99].forEach(function(f, i){ tone(ctx, f, f, t0 + i*0.12, 0.3, 'triangle', 0.15); });
+  }
+  function sfxFinale(){
+    var ctx = ensureAudio(); if(!ctx) return; var t0 = ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach(function(f, i){ tone(ctx, f, f, t0 + i*0.11, 0.32, 'triangle', 0.16); });
+  }
+  function buzz(ms){ try{ if('vibrate' in navigator) navigator.vibrate(ms); }catch(e){} }
+  // Audio must never block the click dispatch that follows it — AudioContext creation
+  // can stall on some browsers/environments with no audio backend. Always defer.
+  function deferAudio(fn){
+    setTimeout(function(){
+      try{ resumeAudio(); if(fn) fn(); }catch(e){}
+    }, 0);
+  }
+  function burstConfetti(opts){
+    try{ if(typeof confetti === 'function') confetti(opts); }catch(e){}
+  }
+  var celebrated = {};
+  function maybeCelebrate(stepIndex){
+    if(celebrated[stepIndex]) return;
+    var step = STEPS[stepIndex];
+    if(!step) return;
+    if(step.type === 'transition'){
+      celebrated[stepIndex] = true;
+      burstConfetti({ particleCount:80, spread:70, origin:{ y:0.6 } });
+      sfxFanfare(); buzz(25);
+    } else if(step.type === 'resultados' && !state.onboarded){
+      celebrated[stepIndex] = true;
+      burstConfetti({ particleCount:150, spread:100, origin:{ y:0.5 } });
+      sfxFinale(); buzz(30);
+    }
+  }
+  function externalIcon(){
+    return '<svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
+  function spotifyLinkHTML(artist){
+    var url = 'https://open.spotify.com/search/' + encodeURIComponent(artist);
+    return '<a class="spotifylink" href="'+url+'" target="_blank" rel="noopener">'+externalIcon()+'Buscar en Spotify</a>';
+  }
+  function fansRow(act){
+    var names = Object.values(likesFor(act.id));
+    if(!names.length) return '';
+    var shown = names.slice(0,4).map(function(n){ return '<span class="fan-chip">'+initials(n)+'</span>'; }).join('');
+    var more = names.length>4 ? '<span class="fan-chip more">+'+(names.length-4)+'</span>' : '';
+    return '<div class="fans">'+shown+more+'</div>';
+  }
+
+  // ---------- content: line-up (read + reference) ----------
+  function renderLineup(){
+    var acts = ACTS.filter(function(a){ return a.day===state.day; }).sort(function(a,b){ return a.start-b.start; });
+    var html = '<div class="viewhead"><h2>Line-up · '+DAY_LABEL[state.day]+'</h2><p>'+acts.length+' actos · toca «Votar» para ir directo a ese bloque del recorrido</p></div>';
+    html += '<div class="actlist">';
+    acts.forEach(function(act){
+      var st = STAGES[act.stage];
+      var choice = myChoiceFor(act.franjaId);
+      var tagText, tagClass = '';
+      if(choice === act.id){ tagText = 'Tu voto: este'; tagClass = ' mine'; }
+      else if(choice === 'draw'){ tagText = 'Tu voto: empate'; }
+      else if(choice === 'none'){ tagText = 'Tu voto: ninguno'; }
+      else if(choice){ tagText = 'Tu voto: el otro'; }
+      else { tagText = 'Sin decidir'; }
+      html += '<div class="act" style="border-left-color:'+st.color+'">'
+        + '<div class="meta">'
+          + '<div class="stagebadge">'+st.tag+'</div>'
+          + '<div class="time">'+act.t+'</div>'
+          + '<div class="artist">'+act.artist+'</div>'
+          + spotifyLinkHTML(act.artist)
+          + fansRow(act)
+          + '<span class="lineup-tag'+tagClass+'">'+tagText+'</span>'
+        + '</div>'
+        + '<button class="jumpbtn" data-jump="'+act.franjaId+'">Votar</button>'
+      + '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  // ---------- content: one franja as a compact result card ----------
+  function franjaCardHTML(f){
+    var start = Math.min.apply(null, f.acts.map(function(a){return a.start;}));
+    var end = Math.max.apply(null, f.acts.map(function(a){return a.end;}));
+    var counts = f.acts.map(function(a){ return countFor(a.id); });
+    var max = Math.max.apply(null, counts);
+    var tiedWinners = counts.filter(function(c){ return c===max; }).length;
+    var others = counts.filter(function(c){ return c!==max; });
+    var second = others.length ? Math.max.apply(null, others) : 0;
+    var groupLabel = '';
+    if(max > 0){
+      if(tiedWinners > 1) groupLabel = 'Empate reñido';
+      else if(second === 0) groupLabel = 'Arrasó';
+      else if(max - second === 1) groupLabel = 'Por un pelo';
+    }
+    var myChoice = myChoiceFor(f.id);
+    var html = '<div class="franja"><div class="franja-time">'+minToLabel(start)+' – '+minToLabel(end)+'</div><div class="franja-row">';
+    f.acts.forEach(function(act){
+      var st = STAGES[act.stage];
+      var c = countFor(act.id);
+      var winning = max>0 && c===max;
+      var mine = myChoice===act.id;
+      html += '<div class="opt'+(winning?' winning':'')+(mine?' mine':'')+'" style="border-top-color:'+st.color+'; --card-glow:'+st.color+'66;">'
+        + (winning ? '<div class="crown">'+crownSvg()+'</div>' : '')
+        + '<div class="stagebadge">'+st.name+'</div>'
+        + '<div class="artist">'+act.artist+'</div>'
+        + '<div class="time">'+act.t+'</div>'
+        + (winning && groupLabel ? '<div class="marginlabel">'+groupLabel+'</div>' : '')
+        + spotifyLinkHTML(act.artist)
+        + fansRow(act)
+        + '<button class="choosebtn small'+(mine?' chosen':'')+'" data-choose-franja="'+f.id+'" data-choose-value="'+act.id+'">'+(mine?'✓ Tu voto':'Elegir')+'</button>'
+      + '</div>';
+    });
+    html += '</div>';
+    if(myChoice==='draw' || myChoice==='none'){
+      html += '<p class="footnote-vote">Tu voto: '+(myChoice==='draw' ? 'empate, quieres ver los dos' : 'ninguno, pasaste este bloque')+'</p>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderResultados(){
+    var total = totalFriendsVoted();
+    var html = '<div class="viewhead"><h2>Resultados</h2><p>'+total+' '+(total===1?'amigo ha':'amigos han')+' votado algo hasta ahora</p></div>';
+    var i = 0;
+    ['sab','dom'].forEach(function(day){
+      html += '<div class="dayhead">'+DAY_LABEL[day]+'</div>';
+      FRANJAS[day].forEach(function(f){
+        var delay = Math.min(i, 12) * 55;
+        html += '<div class="reveal" style="--reveal-delay:'+delay+'ms">'+franjaCardHTML(f)+'</div>';
+        i++;
+      });
+    });
+    return html;
+  }
+
+  // ---------- content: suggested plan (weighted interval scheduling) ----------
+  function suggestPlan(day){
+    var acts = ACTS.filter(function(a){ return a.day===day; })
+      .map(function(a){ return { act:a, w: countFor(a.id) }; })
+      .sort(function(a,b){ return a.act.end - b.act.end; });
+    var n = acts.length;
+    var dp = new Array(n+1).fill(0);
+    var take = new Array(n+1).fill(false);
+    var prevCompat = new Array(n+1).fill(0);
+    for(var i=1;i<=n;i++){
+      var cur = acts[i-1].act;
+      var p = 0;
+      for(var j=i-1;j>=1;j--){ if(acts[j-1].act.end <= cur.start){ p=j; break; } }
+      prevCompat[i]=p;
+      var include = acts[i-1].w + dp[p];
+      var exclude = dp[i-1];
+      if(include >= exclude){ dp[i]=include; take[i]=true; } else { dp[i]=exclude; take[i]=false; }
+    }
+    var chosen = [];
+    var i = n;
+    while(i>0){
+      if(take[i]){ chosen.push(acts[i-1].act); i = prevCompat[i]; }
+      else { i = i-1; }
+    }
+    chosen.reverse();
+    return chosen;
+  }
+
+  function renderPlan(){
+    var chosen = suggestPlan(state.day);
+    var totalMin = chosen.reduce(function(s,a){ return s + (a.end-a.start); }, 0);
+    var html = '<div class="viewhead"><h2>Plan sugerido · '+DAY_LABEL[state.day]+'</h2><p>La ruta con más votos del grupo, sin choques de horario</p></div>';
+    html += '<div class="planstats">'
+      + '<div class="stat"><div class="n">'+chosen.length+'</div><div class="l">Actos en el plan</div></div>'
+      + '<div class="stat"><div class="n">'+(totalMin/60).toFixed(1)+'</div><div class="l">Horas de música</div></div>'
+      + '</div>';
+    chosen.forEach(function(act){
+      var st = STAGES[act.stage];
+      var c = countFor(act.id);
+      html += '<div class="plan-item" style="border-left-color:'+st.color+'">'
+        + '<div class="time">'+act.t.split('–')[0]+'</div>'
+        + '<div class="info"><div class="artist">'+act.artist+'</div><div class="stagebadge">'+st.name+'</div></div>'
+        + '<div class="likes">'+c+' '+(c===1?'voto':'votos')+'</div>'
+      + '</div>';
+    });
+    html += '<p class="plannote">Se recalcula solo con los votos de todos. Si nadie ha votado, arma el recorrido más largo posible sin cruces.</p>';
+    return html;
+  }
+
+  // ---------- content: mapa ----------
+  function renderMapa(){
+    var s = STAGES;
+    return '<div class="viewhead"><h2>Mapa del parche</h2><p>Ubicación relativa de los 4 escenarios (simplificado)</p></div>'
+    + '<div class="mapwrap">'
+    + '<svg viewBox="0 0 300 220" width="100%" role="img" aria-label="Mapa simplificado del festival">'
+      + '<rect x="0" y="0" width="300" height="220" rx="14" fill="#241a12"/>'
+      + '<rect x="14" y="18" width="82" height="40" rx="8" fill="'+s.cotopaxi.color+'"/>'
+      + '<text x="55" y="43" text-anchor="middle" font-family="Anton" font-size="11" fill="#f5e8c8">COTOPAXI</text>'
+      + '<rect x="204" y="18" width="82" height="40" rx="8" fill="'+s.cocuy.color+'"/>'
+      + '<text x="245" y="43" text-anchor="middle" font-family="Anton" font-size="11" fill="#f5e8c8">COCUY</text>'
+      + '<rect x="109" y="86" width="82" height="40" rx="8" fill="'+s.aconcagua.color+'"/>'
+      + '<text x="150" y="111" text-anchor="middle" font-family="Anton" font-size="11" fill="#f5e8c8">ACONCAGUA</text>'
+      + '<rect x="180" y="156" width="82" height="40" rx="8" fill="'+s.cordillera.color+'"/>'
+      + '<text x="221" y="181" text-anchor="middle" font-family="Anton" font-size="10.5" fill="#f5e8c8">CORDILLERA</text>'
+      + '<rect x="10" y="156" width="76" height="40" rx="8" fill="#4a3620"/>'
+      + '<text x="48" y="174" text-anchor="middle" font-family="Barlow" font-weight="700" font-size="9.5" fill="#d8c69e">ZONA DE</text>'
+      + '<text x="48" y="186" text-anchor="middle" font-family="Barlow" font-weight="700" font-size="9.5" fill="#d8c69e">COMIDAS</text>'
+      + '<circle cx="150" cy="20" r="3" fill="#eeb62c"/>'
+      + '<text x="150" y="12" text-anchor="middle" font-family="Barlow" font-weight="700" font-size="8.5" fill="#eeb62c">LAGO / ENTRADAS</text>'
+    + '</svg>'
+    + '<div class="maplegend">'
+      + Object.keys(s).map(function(k){ return '<div class="legit"><span class="legdot" style="background:'+s[k].color+'"></span>'+s[k].name+'</div>'; }).join('')
+    + '</div>'
+    + '<p class="mapcaption">Mapa a mano alzada a partir del mapa oficial del festival, solo para ubicarse rápido entre escenarios. Cordillera queda del lado del ingreso por Av. Nutis (calle 63); Cotopaxi y Cocuy quedan hacia el lago, en costados opuestos; Aconcagua queda en el centro, cerca de zona VIP. Para baños, accesibilidad y salidas usa el mapa oficial impreso o de la app.</p>'
+    + '</div>';
+  }
+
+  // ---------- content: one wizard franja step ----------
+  function renderFranjaStep(f){
+    var start = Math.min.apply(null, f.acts.map(function(a){return a.start;}));
+    var end = Math.max.apply(null, f.acts.map(function(a){return a.end;}));
+    var myChoice = myChoiceFor(f.id);
+    var html = '<div class="wiz-time">'+minToLabel(start)+' – '+minToLabel(end)+'</div>';
+    html += '<div class="wiz-row">';
+    f.acts.forEach(function(act){
+      var st = STAGES[act.stage];
+      var chosen = myChoice === act.id;
+      var dimmed = myChoice && myChoice !== 'draw' && myChoice !== 'none' && !chosen;
+      var c = countFor(act.id);
+      html += '<div class="wizcard'+(chosen?' chosen':'')+(dimmed?' dimmed':'')+'" style="border-top-color:'+st.color+'; --card-glow:'+st.color+'66;">'
+        + '<div class="stagebadge">'+st.name+'</div>'
+        + '<div class="artist">'+act.artist+'</div>'
+        + '<div class="time">'+act.t+'</div>'
+        + spotifyLinkHTML(act.artist)
+        + '<div class="tally">'+c+' '+(c===1?'persona del parche quiere':'personas del parche quieren')+' verlo</div>'
+        + '<button class="choosebtn'+(chosen?' chosen':'')+'" data-choose-franja="'+f.id+'" data-choose-value="'+act.id+'">'+(chosen?'✓ Elegido':'Elegir')+'</button>'
+      + '</div>';
+    });
+    html += '</div>';
+    html += '<div class="pillrow">'
+      + '<button class="pill'+(myChoice==='draw'?' chosen':'')+'" data-choose-franja="'+f.id+'" data-choose-value="draw">Empate — veo los dos</button>'
+      + '<button class="pill'+(myChoice==='none'?' chosen':'')+'" data-choose-franja="'+f.id+'" data-choose-value="none">Ninguno — paso</button>'
+    + '</div>';
+    return html;
+  }
+
+  function renderTransitionStep(){
+    return '<div class="transitioncard"><div class="big">¡Listo el sábado!</div>'
+      + '<p>Ahora vienen los bloques del domingo 13 — mismo mecanismo: elige artista, empate o ninguno.</p></div>';
+  }
+
+  function stepLabel(i){
+    var step = STEPS[i];
+    if(step.type==='franja') return DAY_LABEL[step.franja.day]+' · Bloque '+(step.franja.idx+1)+' de '+FRANJAS[step.franja.day].length;
+    if(step.type==='transition') return 'Cambio de día';
+    if(step.type==='mapa') return 'Mapa';
+    return 'Resultados';
+  }
+
+  function renderProgress(){
+    var step = STEPS[state.step];
+    if(step.type !== 'franja'){
+      var pct = Math.round(((state.step+1)/STEPS.length)*100);
+      return '<div class="progresstrack"><div class="progressfill" style="width:'+pct+'%"></div></div>';
+    }
+    var total = FRANJAS[step.franja.day].length, idx = step.franja.idx, segs = '';
+    for(var i=0;i<total;i++){
+      var cls = i<idx ? 'seg filled' : (i===idx ? 'seg current' : 'seg');
+      segs += '<div class="'+cls+'"></div>';
+    }
+    return '<div class="segbar">'+segs+'</div>';
+  }
+
+  function renderWizardStep(){
+    var step = STEPS[state.step];
+    var html = '<div class="wizhead"><span class="steplabel">'+stepLabel(state.step)+'</span>'
+      + (!state.onboarded && state.step===0 ? '<button class="skiplink" data-action="skip">Saltar recorrido →</button>' : '')
+      + '</div>'
+      + renderProgress();
+
+    var body = '';
+    if(step.type==='franja') body = renderFranjaStep(step.franja);
+    else if(step.type==='transition') body = renderTransitionStep();
+    else if(step.type==='mapa') body = renderMapa();
+    else body = renderResultados();
+    html += '<div class="wizbody slide-'+state.lastDir+'">'+body+'</div>';
+
+    var isLast = state.step === LAST_STEP;
+    html += '<div class="wiznav">'
+      + '<button class="navbtn secondary" data-action="prev"'+(state.step===0?' disabled':'')+'>← Anterior</button>'
+      + '<button class="navbtn" data-action="'+(isLast?'finish':'next')+'">'+(isLast?'Entrar a la app →':'Siguiente →')+'</button>'
+    + '</div>';
+    return html;
+  }
+
+  // ---------- nav / chrome ----------
+  function renderNav(){
+    var navwrap = document.getElementById('navwrap');
+    if(!state.onboarded){ navwrap.hidden = true; return; }
+    navwrap.hidden = false;
+    var showDay = (state.tab==='lineup' || state.tab==='plan');
+    document.getElementById('daytabs').hidden = !showDay;
+    if(showDay){
+      document.getElementById('daytabs').innerHTML = ['sab','dom'].map(function(d){
+        return '<button class="daybtn'+(state.day===d?' active':'')+'" data-day="'+d+'">'+DAY_LABEL[d].toUpperCase()+'</button>';
+      }).join('');
+    }
+    var tabs = [['recorrido','Recorrido'],['resultados','Resultados'],['lineup','Line-up'],['plan','Plan'],['mapa','Mapa']];
+    document.getElementById('viewtabs').innerHTML = tabs.map(function(v){
+      return '<button class="viewbtn'+(state.tab===v[0]?' active':'')+'" data-tab="'+v[0]+'">'+v[1]+'</button>';
+    }).join('');
+  }
+
+  function renderWhoami(){
+    var box = document.getElementById('whoami');
+    if(!myName){ box.innerHTML=''; return; }
+    var n = totalFriendsVoted();
+    box.innerHTML = '<span class="avatar">'+initials(myName)+'</span>'
+      + '<span class="name">'+myName+'</span>'
+      + '<span class="liveflag'+(liveMode?'':' off')+'"><span class="dot"></span>'+(liveMode ? (n>0? n+' votando' : 'en vivo') : 'conectando…')+'</span>'
+      + '<button id="renameBtn">Cambiar</button>';
+  }
+
+  function render(){
+    renderWhoami();
+    renderNav();
+    var mainEl = document.getElementById('main');
+    if(!myName){ mainEl.innerHTML=''; return; }
+    if(!state.onboarded || state.tab==='recorrido'){
+      mainEl.innerHTML = renderWizardStep();
+    } else if(state.tab==='lineup'){
+      mainEl.innerHTML = renderLineup();
+    } else if(state.tab==='plan'){
+      mainEl.innerHTML = renderPlan();
+    } else if(state.tab==='mapa'){
+      mainEl.innerHTML = renderMapa();
+    } else {
+      mainEl.innerHTML = renderResultados();
+    }
+  }
+
+  function gotoStep(n){
+    n = Math.max(0, Math.min(LAST_STEP, n));
+    state.lastDir = n >= state.step ? 'next' : 'prev';
+    state.step = n;
+    localStorage.setItem('rc_step', String(n));
+    if(n === LAST_STEP && !state.onboarded){
+      state.onboarded = true;
+      localStorage.setItem('rc_onboarded', '1');
+    }
+    render();
+    setTimeout(function(){ maybeCelebrate(n); }, 0);
+  }
+
+  // ---------- events ----------
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('button');
+    if(!t) return;
+    if(t.dataset.day){ state.day = t.dataset.day; render(); deferAudio(sfxClick); return; }
+    if(t.dataset.tab){
+      state.tab = t.dataset.tab;
+      if(t.dataset.tab === 'recorrido'){ state.step = 0; localStorage.setItem('rc_step','0'); }
+      render();
+      deferAudio(sfxClick);
+      return;
+    }
+    if(t.dataset.chooseFranja){ chooseFranja(t.dataset.chooseFranja, t.dataset.chooseValue); return; }
+    if(t.dataset.jump){
+      state.tab = 'recorrido';
+      state.step = findStepIndexForFranja(t.dataset.jump);
+      localStorage.setItem('rc_step', String(state.step));
+      render();
+      deferAudio(sfxClick);
+      return;
+    }
+    if(t.dataset.action==='prev'){ gotoStep(state.step-1); deferAudio(sfxClick); return; }
+    if(t.dataset.action==='next'){ gotoStep(state.step+1); deferAudio(sfxClick); return; }
+    if(t.dataset.action==='finish'){ state.tab = 'resultados'; render(); deferAudio(sfxClick); return; }
+    if(t.dataset.action==='skip'){
+      state.onboarded = true; localStorage.setItem('rc_onboarded','1');
+      state.tab = 'resultados'; render(); return;
+    }
+    if(t.id==='renameBtn'){ openModal(); return; }
+    if(t.id==='nameSubmit'){ submitName(); return; }
+  });
+  document.getElementById('nameInput').addEventListener('keydown', function(e){
+    if(e.key==='Enter') submitName();
+  });
+
+  function openModal(){
+    var modal = document.getElementById('nameModal');
+    document.getElementById('nameInput').value = myName;
+    modal.hidden = false;
+    setTimeout(function(){ document.getElementById('nameInput').focus(); }, 30);
+  }
+  function submitName(){
+    var v = document.getElementById('nameInput').value.trim();
+    if(!v) return;
+    myName = v.slice(0,24);
+    localStorage.setItem('rc_name', myName);
+    document.getElementById('nameModal').hidden = true;
+    render();
+  }
+
+  async function chooseFranja(franjaId, value){
+    if(!myName){ openModal(); return; }
+    var current = myChoiceFor(franjaId);
+    var next = current === value ? null : value;
+    votesRaw[franjaId] = votesRaw[franjaId] || {};
+    if(next === null){ delete votesRaw[franjaId][myId]; }
+    else { votesRaw[franjaId][myId] = { name: myName, choice: next }; }
+    deriveVotesByArtist();
+    render();
+    if(next !== null){
+      deferAudio(next === 'draw' ? sfxDraw : (next === 'none' ? sfxNone : sfxChoose));
+      buzz(15);
+      requestAnimationFrame(function(){
+        var els = document.querySelectorAll('[data-choose-franja][data-choose-value]');
+        els.forEach(function(el){
+          if(el.getAttribute('data-choose-franja') === franjaId && el.getAttribute('data-choose-value') === value){
+            var card = el.closest('.wizcard, .opt') || el;
+            card.classList.add('pulse');
+            card.addEventListener('animationend', function h(){ card.classList.remove('pulse'); card.removeEventListener('animationend', h); });
+          }
+        });
+      });
+    }
+    if(!client) return;
+    try{
+      if(next === null){
+        await client.mutation('votes:deleteVote', { franjaId: franjaId, friendId: myId });
+      } else {
+        await client.mutation('votes:setVote', {
+          franjaId: franjaId, day: franjaId.split('-')[0], friendId: myId, name: myName, choice: next
+        });
+      }
+    }catch(err){ console.error('vote sync failed', err); }
+  }
+
+  function initConvex(){
+    if(!window.convex || !CONVEX_URL || CONVEX_URL.indexOf('REEMPLAZAR') === 0){
+      console.warn('Convex no está configurado — pon tu CONVEX_URL en index.html. Modo local, sin sincronizar.');
+      return;
+    }
+    try{ client = new window.convex.ConvexClient(CONVEX_URL); }
+    catch(e){ console.error('no se pudo conectar a Convex', e); client = null; return; }
+    liveMode = true;
+    client.onUpdate('votes:list', {}, function(docs){
+      var nextRaw = {};
+      (docs || []).forEach(function(v){
+        if(!v || !v.franjaId || !v.friendId || !v.choice) return;
+        nextRaw[v.franjaId] = nextRaw[v.franjaId] || {};
+        nextRaw[v.franjaId][v.friendId] = { name: v.name || 'Amigo', choice: v.choice };
+      });
+      votesRaw = nextRaw;
+      deriveVotesByArtist();
+      render();
+    }, function(err){ console.error('votes subscription error', err); });
+  }
+
+  render();
+  if(!myName){ openModal(); }
+  initConvex();
+
+})();
+</script>
+</body>
+</html>

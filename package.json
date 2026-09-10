@@ -1,0 +1,12 @@
+{
+  "name": "ruta-cordillera",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Votación del parche para el Festival Cordillera 2026",
+  "scripts": {
+    "dev": "convex dev"
+  },
+  "dependencies": {
+    "convex": "^1.45.0"
+  }
+}
