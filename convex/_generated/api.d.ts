@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as reactions from "../reactions.js";
 import type * as votes from "../votes.js";
 
 import type {
@@ -17,6 +18,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  reactions: typeof reactions;
   votes: typeof votes;
 }>;
 

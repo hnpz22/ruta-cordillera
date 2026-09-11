@@ -10,4 +10,11 @@ export default defineSchema({
     choice: v.string(),
     ts: v.number(),
   }).index("by_franja_friend", ["franjaId", "friendId"]),
+  reactions: defineTable({
+    actId: v.string(),
+    friendId: v.string(),
+    name: v.string(),
+    emoji: v.string(),
+    ts: v.number(),
+  }).index("by_act", ["actId"]),
 });

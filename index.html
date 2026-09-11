@@ -207,6 +207,41 @@
   .pill.chosen{ background:var(--bg-2); border-color:var(--teal); color:var(--teal); }
   .pill.pulse{ animation: choosePulse .35s var(--ease-bounce); }
 
+  /* ---------- reactions ---------- */
+  .reactwrap{ position:absolute; top:8px; right:8px; display:flex; align-items:center; gap:4px; z-index:3; }
+  .reactcount{
+    background:#00000050; color:var(--cream); font-size:10.5px; font-weight:700; border-radius:20px;
+    padding:2px 6px; font-family:'Economica',sans-serif;
+  }
+  .reactbtn{
+    position:relative; width:26px; height:26px; border-radius:50%; background:#00000040; border:none;
+    color:var(--cream); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    padding:0; flex:none; line-height:1;
+  }
+  .reactbtn:hover{ background:#00000066; }
+  .reactbtn .plus{
+    position:absolute; bottom:-2px; right:-2px; background:var(--teal); color:var(--ink); width:12px; height:12px;
+    border-radius:50%; font-size:9px; font-weight:900; display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+  .emojipicker{
+    position:absolute; top:32px; right:0; background:var(--ink); border-radius:10px; padding:5px 6px;
+    display:flex; gap:2px; z-index:5; box-shadow:0 8px 20px #00000070;
+  }
+  .emojipicker button{ background:none; border:none; font-size:19px; cursor:pointer; padding:4px; line-height:1; border-radius:6px; }
+  .emojipicker button:hover{ background:#ffffff22; transform:scale(1.15); }
+  #emojiLayer{ position:fixed; inset:0; pointer-events:none; z-index:200; overflow:hidden; }
+  .flyemoji{
+    position:absolute; font-size:26px; will-change:transform,opacity; animation: emojiFly 2.6s ease-out forwards;
+  }
+  @keyframes emojiFly{
+    0%{ transform:translate(0,0) scale(.6) rotate(0deg); opacity:0; }
+    12%{ opacity:1; transform:translate(var(--drift-a,10px), -50px) scale(1.15) rotate(var(--rot-a,-8deg)); }
+    100%{ transform:translate(var(--drift-b,-30px), -440px) scale(1) rotate(var(--rot-b,10deg)); opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .flyemoji{ animation-duration: .01ms; }
+  }
+
   /* ---------- wizard ---------- */
   .wizhead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 2px 8px; }
   .steplabel{ font-family:'Teko',sans-serif; font-weight:600; font-size:16px; color:var(--cream-dim); letter-spacing:.03em; }
@@ -220,7 +255,7 @@
   .wiz-row{ display:grid; gap:11px; grid-template-columns:repeat(auto-fit, minmax(132px,1fr)); margin-bottom:14px; }
   .wizcard{
     background:var(--panel); border-radius:10px; padding:14px; border-top:5px solid var(--red);
-    display:flex; flex-direction:column;
+    display:flex; flex-direction:column; position:relative;
     transition: transform .18s var(--ease-bounce), box-shadow .25s ease, opacity .2s ease, filter .2s ease;
   }
   .wizcard.chosen{
@@ -302,11 +337,16 @@
   .modal-label{ font-size:12px; color:var(--ink); opacity:.7; font-weight:700; margin:16px 0 6px; text-transform:uppercase; letter-spacing:.04em; }
   .svcrow{ display:flex; gap:8px; }
   .svcbtn{
-    flex:1; background:none; border:2px solid var(--ink); color:var(--ink); opacity:.6; border-radius:20px;
+    flex:1; background:none; border:2px solid var(--ink); color:var(--ink); opacity:.55; border-radius:20px;
     padding:9px 6px; min-height:40px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Economica',sans-serif;
+    transition: transform .15s var(--ease-bounce), opacity .15s ease;
   }
   .svcbtn:hover{ opacity:.85; }
-  .svcbtn.chosen{ background:var(--ink); color:var(--teal); opacity:1; }
+  .svcbtn.chosen{ opacity:1; transform:scale(1.03); }
+  .svcbtn[data-svc="spotify"]{ border-color:#1DB954; color:#1DB954; }
+  .svcbtn[data-svc="spotify"].chosen{ background:#1DB954; color:#08351b; border-color:#1DB954; }
+  .svcbtn[data-svc="apple"]{ border-color:#FA233B; color:#FA233B; }
+  .svcbtn[data-svc="apple"].chosen{ background:linear-gradient(135deg,#FB5C74,#FA233B); color:#fff; border-color:#FA233B; }
   .modal button{
     margin-top:12px; width:100%; background:var(--ink); color:var(--teal); border:none;
     font-family:'Teko',sans-serif; font-weight:600; letter-spacing:.03em; font-size:18px; padding:12px; border-radius:7px;
@@ -450,6 +490,8 @@
   </div>
 </div>
 
+<div id="emojiLayer" aria-hidden="true"></div>
+
 <script>
 (function(){
 
@@ -578,6 +620,9 @@
   var votesByArtist = {}; // artistId -> { friendId: name }  (derived)
   var client = null;
   var liveMode = false;
+  var REACTION_EMOJIS = ['🔥','🎉','😍','🙌','💃','😂'];
+  var reactionsRaw = {}; // actId -> [{emoji, name, ts}]
+  var openPickerFor = null; // actId whose emoji picker is open, or null
 
   function initials(name){
     var parts = (name||'?').trim().split(/\s+/);
@@ -738,6 +783,55 @@
       : webUrl;
     return '<a class="musiclink" href="'+href+'">'+spotifyIcon()+'Buscar en Spotify</a>';
   }
+  function reactBtnHTML(actId){
+    var count = (reactionsRaw[actId] || []).length;
+    var html = '<div class="reactwrap">'
+      + (count > 0 ? '<span class="reactcount">'+count+'</span>' : '')
+      + '<button class="reactbtn" data-react-toggle="'+actId+'" aria-label="Reaccionar">😀<span class="plus">+</span></button>';
+    if(openPickerFor === actId){
+      html += '<div class="emojipicker">' + REACTION_EMOJIS.map(function(e){
+        return '<button data-react-emoji="'+actId+'" data-emoji="'+e+'">'+e+'</button>';
+      }).join('') + '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+  function flyEmoji(emoji, xPct, yPct){
+    var layer = document.getElementById('emojiLayer');
+    if(!layer) return;
+    var el = document.createElement('div');
+    el.className = 'flyemoji';
+    el.textContent = emoji;
+    var x = (xPct != null ? xPct : (20 + Math.random()*60));
+    var y = (yPct != null ? yPct : (55 + Math.random()*25));
+    el.style.left = x + 'vw';
+    el.style.top = y + 'vh';
+    el.style.setProperty('--drift-a', (Math.round(Math.random()*40-20)) + 'px');
+    el.style.setProperty('--drift-b', (Math.round(Math.random()*80-40)) + 'px');
+    el.style.setProperty('--rot-a', (Math.round(Math.random()*24-12)) + 'deg');
+    el.style.setProperty('--rot-b', (Math.round(Math.random()*40-20)) + 'deg');
+    layer.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 3000);
+  }
+  function burstReactionsFor(actId){
+    var list = (reactionsRaw[actId] || []).slice(-12);
+    list.forEach(function(r, i){
+      setTimeout(function(){ flyEmoji(r.emoji); }, i*120);
+    });
+  }
+  async function sendReaction(actId, emoji){
+    // No se agrega optimistamente a reactionsRaw: como es un arreglo (no un mapa por friendId
+    // como los votos), duplicaría la reacción cuando la suscripción de Convex la reciba de vuelta.
+    // El flyEmoji ya dio la respuesta visual inmediata; el conteo se actualiza solo al llegar por Convex.
+    if(!client){
+      reactionsRaw[actId] = reactionsRaw[actId] || [];
+      reactionsRaw[actId].push({ emoji: emoji, name: myName, ts: Date.now() });
+      return;
+    }
+    try{
+      await client.mutation('reactions:add', { actId: actId, friendId: myId, name: myName, emoji: emoji });
+    }catch(err){ console.error('reaction sync failed', err); }
+  }
   function fansRow(act){
     var names = Object.values(likesFor(act.id));
     if(!names.length) return '';
@@ -800,6 +894,7 @@
       var mine = myChoice===act.id;
       html += '<div class="opt'+(winning?' winning':'')+(mine?' mine':'')+'" style="border-top-color:'+st.color+'; --card-glow:'+st.color+'66;">'
         + (winning ? '<div class="crown">'+crownSvg()+'</div>' : '')
+        + reactBtnHTML(act.id)
         + '<div class="stagebadge">'+st.name+'</div>'
         + '<div class="artist">'+act.artist+'</div>'
         + '<div class="time">'+act.t+'</div>'
@@ -922,6 +1017,7 @@
       var dimmed = myChoice && myChoice !== 'draw' && myChoice !== 'none' && !chosen;
       var c = countFor(act.id);
       html += '<div class="wizcard'+(chosen?' chosen':'')+(dimmed?' dimmed':'')+'" style="border-top-color:'+st.color+'; --card-glow:'+st.color+'66;">'
+        + reactBtnHTML(act.id)
         + '<div class="stagebadge">'+st.name+'</div>'
         + '<div class="artist">'+act.artist+'</div>'
         + '<div class="time">'+act.t+'</div>'
@@ -1084,6 +1180,23 @@
   document.addEventListener('click', function(e){
     var t = e.target.closest('button');
     if(!t) return;
+    if(openPickerFor && !(t.dataset.reactToggle || t.dataset.reactEmoji)){ openPickerFor = null; }
+    if(t.dataset.reactToggle){
+      openPickerFor = (openPickerFor === t.dataset.reactToggle) ? null : t.dataset.reactToggle;
+      render();
+      return;
+    }
+    if(t.dataset.reactEmoji){
+      if(!myName){ openModal(); return; }
+      var actId = t.dataset.reactEmoji, emoji = t.dataset.emoji;
+      openPickerFor = null;
+      var rect = t.getBoundingClientRect();
+      flyEmoji(emoji, (rect.left/window.innerWidth*100), (rect.top/window.innerHeight*100));
+      sendReaction(actId, emoji);
+      deferAudio(sfxChoose);
+      render();
+      return;
+    }
     if(t.dataset.day){ clearAutoAdvance(); state.day = t.dataset.day; render(); deferAudio(sfxClick); return; }
     if(t.dataset.tab){
       clearAutoAdvance();
@@ -1167,6 +1280,7 @@
         });
       });
       maybeAutoAdvance(franjaId);
+      if(value !== 'draw' && value !== 'none'){ burstReactionsFor(value); }
     } else {
       clearAutoAdvance();
     }
@@ -1201,6 +1315,16 @@
       deriveVotesByArtist();
       render();
     }, function(err){ console.error('votes subscription error', err); });
+    client.onUpdate('reactions:list', {}, function(docs){
+      var nextR = {};
+      (docs || []).forEach(function(r){
+        if(!r || !r.actId || !r.emoji) return;
+        nextR[r.actId] = nextR[r.actId] || [];
+        nextR[r.actId].push({ emoji: r.emoji, name: r.name, ts: r.ts });
+      });
+      reactionsRaw = nextR;
+      render();
+    }, function(err){ console.error('reactions subscription error', err); });
   }
 
   render();
