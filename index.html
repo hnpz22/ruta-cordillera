@@ -304,6 +304,23 @@
     cursor:pointer;
   }
   .modal button:hover{ background:#2c1a0e; }
+  .whobtn{
+    background:none; border:none; padding:0; cursor:pointer; display:flex; align-items:center;
+    gap:10px; flex:1; min-width:0; font-family:inherit; color:inherit; text-align:left;
+  }
+  .friendslist{ max-height:44vh; overflow-y:auto; margin:4px 0 6px; display:flex; flex-direction:column; gap:6px; }
+  .friendrow{
+    display:flex; align-items:center; gap:10px; background:#00000014; border-radius:7px; padding:7px 10px;
+    font-size:14px; font-weight:700; color:var(--ink);
+  }
+  .friendrow.mine{ background:var(--red); color:var(--cream); }
+  .favatar{
+    width:24px; height:24px; border-radius:50%; background:var(--ink); color:var(--teal);
+    display:flex; align-items:center; justify-content:center; font-family:'Teko',sans-serif; font-weight:600;
+    font-size:12px; flex:none;
+  }
+  .friendrow.mine .favatar{ background:var(--cream); color:var(--ink); }
+  .friendsempty{ font-size:13.5px; color:var(--ink); opacity:.7; font-weight:600; margin:4px 0 10px; }
   [hidden]{ display:none !important; }
 
   /* ---------- segmented progress ---------- */
@@ -407,6 +424,15 @@
     <p>Escribe tu nombre para votar. Tus amigos van a ver tus votos cuando entren al mismo link.</p>
     <input id="nameInput" type="text" placeholder="Tu nombre" maxlength="24" autocomplete="off">
     <button id="nameSubmit">Entrar al parche</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="friendsModal" hidden>
+  <div class="modal">
+    <h3>¿Quién más está aquí?</h3>
+    <p id="friendsCount"></p>
+    <div id="friendsList" class="friendslist"></div>
+    <button id="friendsClose">Cerrar</button>
   </div>
 </div>
 
@@ -670,12 +696,18 @@
       + '</svg>';
   }
   function spotifyLinkHTML(artist){
-    // Sin target="_blank": así el navegador hace una navegación normal y el sistema
-    // (Android/iOS) puede interceptar el link de open.spotify.com y abrir la app de
-    // Spotify directamente si está instalada, en vez de forzar una pestaña nueva del
-    // navegador. spotify:search:... se descartó por bugs conocidos (llega a crashear la app).
-    var url = 'https://open.spotify.com/search/' + encodeURIComponent(artist);
-    return '<a class="spotifylink" href="'+url+'">'+spotifyIcon()+'Buscar en Spotify</a>';
+    // El simple https://open.spotify.com/search/... no basta: Spotify no tiene registrado
+    // ese path como "app link" verificado en Android, así que el sistema no lo intercepta
+    // y siempre abre el navegador. En Android se usa un intent:// (mecanismo estándar de
+    // Chrome/Android para abrir una app específica con fallback web) apuntando directo al
+    // paquete de Spotify. spotify:search:... se descartó por bugs conocidos (crashea la app).
+    var q = encodeURIComponent(artist);
+    var webUrl = 'https://open.spotify.com/search/' + q;
+    var isAndroid = /Android/i.test(navigator.userAgent);
+    var href = isAndroid
+      ? 'intent://open.spotify.com/search/' + q + '#Intent;scheme=https;package=com.spotify.music;S.browser_fallback_url=' + encodeURIComponent(webUrl) + ';end'
+      : webUrl;
+    return '<a class="spotifylink" href="'+href+'">'+spotifyIcon()+'Buscar en Spotify</a>';
   }
   function fansRow(act){
     var names = Object.values(likesFor(act.id));
@@ -944,19 +976,52 @@
     }).join('');
   }
 
+  function allFriendsList(){
+    var seen = {};
+    var list = [];
+    Object.keys(votesRaw).forEach(function(fid){
+      Object.keys(votesRaw[fid]).forEach(function(friendId){
+        var v = votesRaw[fid][friendId];
+        if(!v || !v.choice || seen[friendId]) return;
+        seen[friendId] = true;
+        list.push({ id: friendId, name: v.name || 'Amigo' });
+      });
+    });
+    list.sort(function(a,b){ return a.name.localeCompare(b.name, 'es'); });
+    return list;
+  }
+
   function renderWhoami(){
     var box = document.getElementById('whoami');
     if(!myName){ box.innerHTML=''; return; }
     var n = totalFriendsVoted();
-    box.innerHTML = '<span class="avatar">'+initials(myName)+'</span>'
-      + '<span class="name">'+myName+'</span>'
+    box.innerHTML = '<button id="whoBtn" class="whobtn"><span class="avatar">'+initials(myName)+'</span><span class="name">'+myName+'</span></button>'
       + '<span class="liveflag'+(liveMode?'':' off')+'"><span class="dot"></span>'+(liveMode ? (n>0? n+' votando' : 'en vivo') : 'conectando…')+'</span>'
       + '<button id="renameBtn">Cambiar</button>';
+  }
+
+  function renderFriendsModal(){
+    var list = allFriendsList();
+    document.getElementById('friendsCount').textContent = list.length
+      ? (list.length===1 ? '1 amigo ha votado algo hasta ahora.' : list.length+' amigos han votado algo hasta ahora.')
+      : 'Todavía no hay nadie más registrado.';
+    var box = document.getElementById('friendsList');
+    if(!list.length){ box.innerHTML = ''; return; }
+    box.innerHTML = list.map(function(f){
+      var mine = f.id === myId;
+      return '<div class="friendrow'+(mine?' mine':'')+'"><span class="favatar">'+initials(f.name)+'</span><span>'+f.name+(mine?' (tú)':'')+'</span></div>';
+    }).join('');
+  }
+  function openFriendsModal(){
+    renderFriendsModal();
+    document.getElementById('friendsModal').hidden = false;
   }
 
   function render(){
     renderWhoami();
     renderNav();
+    var friendsModal = document.getElementById('friendsModal');
+    if(friendsModal && !friendsModal.hidden){ renderFriendsModal(); }
     var mainEl = document.getElementById('main');
     if(!myName){ mainEl.innerHTML=''; return; }
     if(!state.onboarded || state.tab==='recorrido'){
@@ -1019,6 +1084,8 @@
     }
     if(t.id==='renameBtn'){ openModal(); return; }
     if(t.id==='nameSubmit'){ submitName(); return; }
+    if(t.id==='whoBtn'){ openFriendsModal(); return; }
+    if(t.id==='friendsClose'){ document.getElementById('friendsModal').hidden = true; return; }
   });
   document.getElementById('nameInput').addEventListener('keydown', function(e){
     if(e.key==='Enter') submitName();
