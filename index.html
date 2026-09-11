@@ -128,13 +128,13 @@
 
   .dayhead{ font-family:'Teko', sans-serif; font-weight:600; font-size:19px; margin:18px 2px 10px; color:var(--teal); }
 
-  /* ---------- spotify link ---------- */
-  .spotifylink{
+  /* ---------- music link (spotify / apple music) ---------- */
+  .musiclink{
     display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--teal); font-weight:700;
     text-decoration:none; margin:4px 0;
   }
-  .spotifylink svg{ width:14px; height:14px; flex:none; }
-  .spotifylink:hover{ color:var(--cream); }
+  .musiclink svg{ width:14px; height:14px; flex:none; }
+  .musiclink:hover{ color:var(--cream); }
 
   /* ---------- act card (line-up) ---------- */
   .actlist{ display:flex; flex-direction:column; gap:10px; }
@@ -299,6 +299,14 @@
     background:#fff5e2; color:var(--ink); font-family:'Economica',sans-serif; font-weight:700;
   }
   .modal input:focus-visible{ outline:2px solid var(--red); outline-offset:1px; }
+  .modal-label{ font-size:12px; color:var(--ink); opacity:.7; font-weight:700; margin:16px 0 6px; text-transform:uppercase; letter-spacing:.04em; }
+  .svcrow{ display:flex; gap:8px; }
+  .svcbtn{
+    flex:1; background:none; border:2px solid var(--ink); color:var(--ink); opacity:.6; border-radius:20px;
+    padding:9px 6px; min-height:40px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Economica',sans-serif;
+  }
+  .svcbtn:hover{ opacity:.85; }
+  .svcbtn.chosen{ background:var(--ink); color:var(--teal); opacity:1; }
   .modal button{
     margin-top:12px; width:100%; background:var(--ink); color:var(--teal); border:none;
     font-family:'Teko',sans-serif; font-weight:600; letter-spacing:.03em; font-size:18px; padding:12px; border-radius:7px;
@@ -424,6 +432,11 @@
     <h3>¿Quién eres?</h3>
     <p>Escribe tu nombre para votar. Tus amigos van a ver tus votos cuando entren al mismo link.</p>
     <input id="nameInput" type="text" placeholder="Tu nombre" maxlength="24" autocomplete="off">
+    <p class="modal-label">¿Dónde escuchas música?</p>
+    <div class="svcrow" id="svcRow">
+      <button type="button" class="svcbtn" data-svc="spotify">Spotify</button>
+      <button type="button" class="svcbtn" data-svc="apple">Apple Music</button>
+    </div>
     <button id="nameSubmit">Entrar al parche</button>
   </div>
 </div>
@@ -551,6 +564,7 @@
     localStorage.setItem('rc_id', myId);
   }
   var myName = localStorage.getItem('rc_name') || '';
+  var myMusic = localStorage.getItem('rc_music') || 'spotify';
 
   // ---------- state ----------
   var state = {
@@ -696,19 +710,33 @@
       + '<path d="M7.4 15.4c2.4-.6 5-.4 7 .8" fill="none" stroke="#0b0b0b" stroke-width="1.3" stroke-linecap="round"/>'
       + '</svg>';
   }
-  function spotifyLinkHTML(artist){
-    // El simple https://open.spotify.com/search/... no basta: Spotify no tiene registrado
-    // ese path como "app link" verificado en Android, así que el sistema no lo intercepta
-    // y siempre abre el navegador. En Android se usa un intent:// (mecanismo estándar de
-    // Chrome/Android para abrir una app específica con fallback web) apuntando directo al
-    // paquete de Spotify. spotify:search:... se descartó por bugs conocidos (crashea la app).
+  function appleMusicIcon(){
+    return '<svg viewBox="0 0 24 24" aria-hidden="true">'
+      + '<circle cx="12" cy="12" r="11" fill="#FA233B"/>'
+      + '<path d="M15.2 6.8v7.55a2.15 2.15 0 1 1-1.3-1.97V9.15L10 10.2v5.15a2.15 2.15 0 1 1-1.3-1.97V8.1z" fill="#fff"/>'
+      + '</svg>';
+  }
+  function musicLinkHTML(artist){
+    // El simple https://open.spotify.com/search/... (o music.apple.com/search) no basta:
+    // ninguno de los dos servicios tiene ese path registrado como "app link" verificado en
+    // Android, así que el sistema no lo intercepta y siempre abre el navegador. En Android se
+    // usa un intent:// (mecanismo estándar de Chrome/Android para abrir una app específica con
+    // fallback web) apuntando directo al paquete de cada app. spotify:search:... se descartó
+    // por bugs conocidos (crashea la app).
     var q = encodeURIComponent(artist);
-    var webUrl = 'https://open.spotify.com/search/' + q;
     var isAndroid = /Android/i.test(navigator.userAgent);
+    if(myMusic === 'apple'){
+      var webUrlA = 'https://music.apple.com/search?term=' + q;
+      var hrefA = isAndroid
+        ? 'intent://music.apple.com/search?term=' + q + '#Intent;scheme=https;package=com.apple.android.music;S.browser_fallback_url=' + encodeURIComponent(webUrlA) + ';end'
+        : webUrlA;
+      return '<a class="musiclink" href="'+hrefA+'">'+appleMusicIcon()+'Buscar en Apple Music</a>';
+    }
+    var webUrl = 'https://open.spotify.com/search/' + q;
     var href = isAndroid
       ? 'intent://open.spotify.com/search/' + q + '#Intent;scheme=https;package=com.spotify.music;S.browser_fallback_url=' + encodeURIComponent(webUrl) + ';end'
       : webUrl;
-    return '<a class="spotifylink" href="'+href+'">'+spotifyIcon()+'Buscar en Spotify</a>';
+    return '<a class="musiclink" href="'+href+'">'+spotifyIcon()+'Buscar en Spotify</a>';
   }
   function fansRow(act){
     var names = Object.values(likesFor(act.id));
@@ -737,7 +765,7 @@
           + '<div class="stagebadge">'+st.tag+'</div>'
           + '<div class="time">'+act.t+'</div>'
           + '<div class="artist">'+act.artist+'</div>'
-          + spotifyLinkHTML(act.artist)
+          + musicLinkHTML(act.artist)
           + fansRow(act)
           + '<span class="lineup-tag'+tagClass+'">'+tagText+'</span>'
         + '</div>'
@@ -776,7 +804,7 @@
         + '<div class="artist">'+act.artist+'</div>'
         + '<div class="time">'+act.t+'</div>'
         + (winning && groupLabel ? '<div class="marginlabel">'+groupLabel+'</div>' : '')
-        + spotifyLinkHTML(act.artist)
+        + musicLinkHTML(act.artist)
         + fansRow(act)
         + '<button class="choosebtn small'+(mine?' chosen':'')+'" data-choose-franja="'+f.id+'" data-choose-value="'+act.id+'">'+(mine?'✓ Tu voto':'Elegir')+'</button>'
       + '</div>';
@@ -897,7 +925,7 @@
         + '<div class="stagebadge">'+st.name+'</div>'
         + '<div class="artist">'+act.artist+'</div>'
         + '<div class="time">'+act.t+'</div>'
-        + spotifyLinkHTML(act.artist)
+        + musicLinkHTML(act.artist)
         + '<div class="tally">'+c+' '+(c===1?'persona del parche quiere':'personas del parche quieren')+' verlo</div>'
         + '<button class="choosebtn'+(chosen?' chosen':'')+'" data-choose-franja="'+f.id+'" data-choose-value="'+act.id+'">'+(chosen?'✓ Elegido':'Elegir')+'</button>'
       + '</div>';
@@ -1085,6 +1113,11 @@
     }
     if(t.id==='renameBtn'){ openModal(); return; }
     if(t.id==='nameSubmit'){ submitName(); return; }
+    if(t.dataset.svc){
+      document.querySelectorAll('.svcbtn').forEach(function(b){ b.classList.toggle('chosen', b===t); });
+      deferAudio(sfxClick);
+      return;
+    }
     if(t.id==='whoBtn'){ openFriendsModal(); return; }
     if(t.id==='friendsClose'){ document.getElementById('friendsModal').hidden = true; return; }
   });
@@ -1095,6 +1128,7 @@
   function openModal(){
     var modal = document.getElementById('nameModal');
     document.getElementById('nameInput').value = myName;
+    document.querySelectorAll('.svcbtn').forEach(function(b){ b.classList.toggle('chosen', b.dataset.svc===myMusic); });
     modal.hidden = false;
     setTimeout(function(){ document.getElementById('nameInput').focus(); }, 30);
   }
@@ -1103,6 +1137,9 @@
     if(!v) return;
     myName = v.slice(0,24);
     localStorage.setItem('rc_name', myName);
+    var chosenSvc = document.querySelector('.svcbtn.chosen');
+    myMusic = chosenSvc ? chosenSvc.dataset.svc : 'spotify';
+    localStorage.setItem('rc_music', myMusic);
     document.getElementById('nameModal').hidden = true;
     render();
   }
