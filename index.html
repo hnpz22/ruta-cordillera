@@ -242,6 +242,35 @@
     .flyemoji{ animation-duration: .01ms; }
   }
 
+  /* ---------- expand: quién votó / quién reaccionó ---------- */
+  .expandtoggle{
+    background:none; border:none; color:var(--teal); font-size:11px; font-weight:700; cursor:pointer;
+    padding:0; margin:6px 0 0; font-family:'Economica',sans-serif; text-align:left; align-self:flex-start;
+  }
+  .expandtoggle:hover{ text-decoration:underline; }
+  .expandpanel{ margin-top:6px; padding-top:6px; border-top:1px dashed #ffffff26; display:flex; flex-direction:column; gap:7px; }
+  .expand-voters{ display:flex; flex-wrap:wrap; gap:5px; }
+  .voterchip{
+    display:flex; align-items:center; gap:5px; background:#00000030; border-radius:20px; padding:2px 8px 2px 2px;
+    font-size:11px; font-weight:700; color:var(--cream);
+  }
+  .voterchip .avatar{
+    width:16px; height:16px; border-radius:50%; background:var(--teal); color:var(--ink); font-family:'Teko',sans-serif;
+    font-weight:600; font-size:9px; display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .expand-reactions{ display:flex; flex-wrap:wrap; gap:12px; padding-top:2px; }
+  .reactionchip{ position:relative; display:flex; }
+  .reactionchip .emoji{ font-size:20px; display:inline-block; animation: floatBob 2.4s ease-in-out infinite; }
+  .reactionchip .who{
+    position:absolute; bottom:-5px; right:-8px; width:15px; height:15px; border-radius:50%; background:var(--ink);
+    color:var(--teal); font-size:7.5px; font-weight:900; display:flex; align-items:center; justify-content:center;
+    font-family:'Teko',sans-serif; border:1.5px solid var(--panel);
+  }
+  @keyframes floatBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-4px); } }
+  @media (prefers-reduced-motion: reduce){
+    .reactionchip .emoji{ animation:none; }
+  }
+
   /* ---------- wizard ---------- */
   .wizhead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 2px 8px; }
   .steplabel{ font-family:'Teko',sans-serif; font-weight:600; font-size:16px; color:var(--cream-dim); letter-spacing:.03em; }
@@ -524,10 +553,10 @@
     A('sab','aconcagua','Sean Paul','23:45–01:00',1425,1500),
 
     A('sab','cotopaxi','Latin Brothers','14:15–15:00',855,900),
-    A('sab','cotopaxi','Emmanuel H','15:45–16:45',945,1005),
+    A('sab','cotopaxi','Emmanuel Horvilleur','15:45–16:45',945,1005),
     A('sab','cotopaxi','Ke Personajes','17:45–18:45',1065,1125),
-    A('sab','cotopaxi','Nene del Real','20:00–21:00',1200,1260),
-    A('sab','cotopaxi','Miguel Nateos','22:45–23:45',1365,1425),
+    A('sab','cotopaxi','Meme del Real','20:00–21:00',1200,1260),
+    A('sab','cotopaxi','Miguel Mateos','22:45–23:45',1365,1425),
 
     A('sab','cocuy','Paula Pera','15:00–15:45',900,945),
     A('sab','cocuy','Kapanga','16:45–17:45',1005,1065),
@@ -536,14 +565,14 @@
     A('sab','cocuy','Lido Pimienta','00:00–01:00',1440,1500),
 
     A('dom','cordillera','Briela Ojeda','14:30–15:15',870,915),
-    A('dom','cordillera','Draco','16:00–17:00',960,1020),
+    A('dom','cordillera','Robi Draco','16:00–17:00',960,1020),
     A('dom','cordillera','Andrés Cepeda','18:00–19:15',1080,1155),
     A('dom','cordillera','Caifanes','20:15–21:30',1215,1290),
     A('dom','cordillera','Ricky Martin','22:30–23:45',1350,1425),
 
     A('dom','aconcagua','Estrambóticos','15:15–16:00',915,960),
-    A('dom','aconcagua','Tan Bionica','17:00–18:00',1020,1080),
-    A('dom','aconcagua','Mago de Oz','19:15–20:15',1155,1215),
+    A('dom','aconcagua','Tan Biónica','17:00–18:00',1020,1080),
+    A('dom','aconcagua','Mägo de Oz','19:15–20:15',1155,1215),
     A('dom','aconcagua','Kany García','21:30–22:30',1290,1350),
     A('dom','aconcagua','Panteón Rococó','23:45–01:00',1425,1500),
 
@@ -551,13 +580,13 @@
     A('dom','cotopaxi','Los de Adentro','16:00–17:00',960,1020),
     A('dom','cotopaxi','Dante Spinetta','18:15–19:15',1095,1155),
     A('dom','cotopaxi','Vicente García','20:15–21:15',1215,1275),
-    A('dom','cotopaxi','Dr. Krápula','22:30–23:30',1350,1410),
+    A('dom','cotopaxi','Doctor Krápula','22:30–23:30',1350,1410),
 
     A('dom','cocuy','Flor de Lava','15:15–16:00',915,960),
     A('dom','cocuy','Jarabe de Palo','17:00–18:00',1020,1080),
     A('dom','cocuy','Bonka','19:15–20:15',1155,1215),
     A('dom','cocuy','Diamante Eléctrico','21:30–22:30',1290,1350),
-    A('dom','cocuy','Amigos Invisibles','23:45–01:00',1425,1500)
+    A('dom','cocuy','Los Amigos Invisibles','23:45–01:00',1425,1500)
   ];
 
   var DAY_LABEL = { sab:'Sábado 12', dom:'Domingo 13' };
@@ -623,6 +652,9 @@
   var REACTION_EMOJIS = ['🔥','🎉','😍','🙌','💃','😂','🤢','🤮','👎','💩','🤷','🤐'];
   var reactionsRaw = {}; // actId -> [{emoji, name, ts}]
   var openPickerFor = null; // actId whose emoji picker is open, or null
+  var resultadosRevealed = false; // el cascade "reveal" de Resultados solo juega una vez por sesión
+  var lastRenderedWizStep = -1; // para no repetir el slide del wizard en renders sin cambio de paso
+  var expandedActs = {}; // actId -> true si su panel "quién votó / reaccionó" está abierto
 
   function initials(name){
     var parts = (name||'?').trim().split(/\s+/);
@@ -839,6 +871,29 @@
     var more = names.length>4 ? '<span class="fan-chip more">+'+(names.length-4)+'</span>' : '';
     return '<div class="fans">'+shown+more+'</div>';
   }
+  function expandBlockHTML(act){
+    var voterNames = Object.values(likesFor(act.id));
+    var reacts = reactionsRaw[act.id] || [];
+    if(!voterNames.length && !reacts.length) return '';
+    var open = !!expandedActs[act.id];
+    var html = '<button class="expandtoggle" data-expand-toggle="'+act.id+'">'
+      + (open ? '▴ Ocultar' : '▾ ¿Quién votó / reaccionó?') + '</button>';
+    if(open){
+      html += '<div class="expandpanel">';
+      if(voterNames.length){
+        html += '<div class="expand-voters">' + voterNames.map(function(n){
+          return '<span class="voterchip"><span class="avatar">'+initials(n)+'</span>'+n+'</span>';
+        }).join('') + '</div>';
+      }
+      if(reacts.length){
+        html += '<div class="expand-reactions">' + reacts.map(function(r){
+          return '<span class="reactionchip"><span class="emoji">'+r.emoji+'</span><span class="who">'+initials(r.name||'?')+'</span></span>';
+        }).join('') + '</div>';
+      }
+      html += '</div>';
+    }
+    return html;
+  }
 
   // ---------- content: line-up (read + reference) ----------
   function renderLineup(){
@@ -901,6 +956,7 @@
         + (winning && groupLabel ? '<div class="marginlabel">'+groupLabel+'</div>' : '')
         + musicLinkHTML(act.artist)
         + fansRow(act)
+        + expandBlockHTML(act)
         + '<button class="choosebtn small'+(mine?' chosen':'')+'" data-choose-franja="'+f.id+'" data-choose-value="'+act.id+'">'+(mine?'✓ Tu voto':'Elegir')+'</button>'
       + '</div>';
     });
@@ -915,12 +971,18 @@
   function renderResultados(){
     var total = totalFriendsVoted();
     var html = '<div class="viewhead"><h2>Resultados</h2><p>'+total+' '+(total===1?'amigo ha':'amigos han')+' votado algo hasta ahora</p></div>';
+    // El "reveal" solo se anima la primera vez que se muestra esta vista en la sesión.
+    // Si no, cada vez que CUALQUIER amigo vota o reacciona (llega por Convex y dispara un
+    // render() global) las tarjetas se recrean desde cero y la animación se repite entera —
+    // se siente como que la pantalla "se sacude" sola mientras alguien más solo está votando.
+    var doReveal = !resultadosRevealed;
+    resultadosRevealed = true;
     var i = 0;
     ['sab','dom'].forEach(function(day){
       html += '<div class="dayhead">'+DAY_LABEL[day]+'</div>';
       FRANJAS[day].forEach(function(f){
         var delay = Math.min(i, 12) * 55;
-        html += '<div class="reveal" style="--reveal-delay:'+delay+'ms">'+franjaCardHTML(f)+'</div>';
+        html += '<div'+(doReveal ? ' class="reveal" style="--reveal-delay:'+delay+'ms"' : '')+'>'+franjaCardHTML(f)+'</div>';
         i++;
       });
     });
@@ -1073,7 +1135,12 @@
     else if(step.type==='transition') body = renderTransitionStep();
     else if(step.type==='mapa') body = renderMapa();
     else body = renderResultados();
-    html += '<div class="wizbody slide-'+state.lastDir+'">'+body+'</div>';
+    // Igual que con el reveal de Resultados: solo se anima el deslizamiento cuando el paso
+    // realmente cambió. Si no, cualquier render() disparado por un voto/reacción remota
+    // mientras estás quieto en el mismo paso repite la animación sin que hayas hecho nada.
+    var isNewStep = (state.step !== lastRenderedWizStep);
+    lastRenderedWizStep = state.step;
+    html += '<div class="wizbody'+(isNewStep ? ' slide-'+state.lastDir : '')+'">'+body+'</div>';
 
     var isLast = state.step === LAST_STEP;
     html += '<div class="wiznav">'
@@ -1181,6 +1248,12 @@
     var t = e.target.closest('button');
     if(!t) return;
     if(openPickerFor && !(t.dataset.reactToggle || t.dataset.reactEmoji)){ openPickerFor = null; }
+    if(t.dataset.expandToggle){
+      expandedActs[t.dataset.expandToggle] = !expandedActs[t.dataset.expandToggle];
+      render();
+      deferAudio(sfxClick);
+      return;
+    }
     if(t.dataset.reactToggle){
       openPickerFor = (openPickerFor === t.dataset.reactToggle) ? null : t.dataset.reactToggle;
       render();
