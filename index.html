@@ -132,7 +132,7 @@
     display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--teal); font-weight:700;
     text-decoration:none; margin:4px 0;
   }
-  .spotifylink svg{ width:12px; height:12px; flex:none; }
+  .spotifylink svg{ width:14px; height:14px; flex:none; }
   .spotifylink:hover{ color:var(--cream); }
 
   /* ---------- act card (line-up) ---------- */
@@ -610,9 +610,9 @@
     osc.connect(gain); gain.connect(ctx.destination);
     osc.start(t0); osc.stop(t0 + duration + 0.02);
   }
-  function sfxClick(){ var ctx = ensureAudio(); if(!ctx) return; tone(ctx, 150, 150, ctx.currentTime, 0.07, 'square', 0.06); }
+  // Toque seco pero suave y tranquilo — para navegar (Siguiente/Anterior/pestañas) y para "Ninguno"
+  function sfxClick(){ var ctx = ensureAudio(); if(!ctx) return; tone(ctx, 210, 190, ctx.currentTime, 0.055, 'sine', 0.05); }
   function sfxChoose(){ var ctx = ensureAudio(); if(!ctx) return; tone(ctx, 420, 620, ctx.currentTime, 0.14, 'sine', 0.15); }
-  function sfxNone(){ var ctx = ensureAudio(); if(!ctx) return; tone(ctx, 320, 260, ctx.currentTime, 0.14, 'sine', 0.10); }
   function sfxDraw(){
     var ctx = ensureAudio(); if(!ctx) return; var t0 = ctx.currentTime;
     tone(ctx, 440, 440, t0, 0.22, 'sine', 0.11);
@@ -638,6 +638,15 @@
     try{ if(typeof confetti === 'function') confetti(opts); }catch(e){}
   }
   var celebrated = {};
+  var autoAdvanceTimer = null;
+  function clearAutoAdvance(){ if(autoAdvanceTimer){ clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; } }
+  function maybeAutoAdvance(franjaId){
+    var inWizard = !state.onboarded || state.tab === 'recorrido';
+    var step = STEPS[state.step];
+    if(!inWizard || !step || step.type !== 'franja' || step.franja.id !== franjaId) return;
+    clearAutoAdvance();
+    autoAdvanceTimer = setTimeout(function(){ autoAdvanceTimer = null; gotoStep(state.step + 1); }, 550);
+  }
   function maybeCelebrate(stepIndex){
     if(celebrated[stepIndex]) return;
     var step = STEPS[stepIndex];
@@ -652,12 +661,21 @@
       sfxFinale(); buzz(30);
     }
   }
-  function externalIcon(){
-    return '<svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function spotifyIcon(){
+    return '<svg viewBox="0 0 24 24" aria-hidden="true">'
+      + '<circle cx="12" cy="12" r="11" fill="#1DB954"/>'
+      + '<path d="M6.4 9.7c3.6-1.1 7.5-.7 10.4 1.1" fill="none" stroke="#0b0b0b" stroke-width="1.7" stroke-linecap="round"/>'
+      + '<path d="M6.9 12.6c3-.8 6.2-.5 8.8.9" fill="none" stroke="#0b0b0b" stroke-width="1.5" stroke-linecap="round"/>'
+      + '<path d="M7.4 15.4c2.4-.6 5-.4 7 .8" fill="none" stroke="#0b0b0b" stroke-width="1.3" stroke-linecap="round"/>'
+      + '</svg>';
   }
   function spotifyLinkHTML(artist){
+    // Sin target="_blank": así el navegador hace una navegación normal y el sistema
+    // (Android/iOS) puede interceptar el link de open.spotify.com y abrir la app de
+    // Spotify directamente si está instalada, en vez de forzar una pestaña nueva del
+    // navegador. spotify:search:... se descartó por bugs conocidos (llega a crashear la app).
     var url = 'https://open.spotify.com/search/' + encodeURIComponent(artist);
-    return '<a class="spotifylink" href="'+url+'" target="_blank" rel="noopener">'+externalIcon()+'Buscar en Spotify</a>';
+    return '<a class="spotifylink" href="'+url+'">'+spotifyIcon()+'Buscar en Spotify</a>';
   }
   function fansRow(act){
     var names = Object.values(likesFor(act.id));
@@ -955,6 +973,7 @@
   }
 
   function gotoStep(n){
+    clearAutoAdvance();
     n = Math.max(0, Math.min(LAST_STEP, n));
     state.lastDir = n >= state.step ? 'next' : 'prev';
     state.step = n;
@@ -971,8 +990,9 @@
   document.addEventListener('click', function(e){
     var t = e.target.closest('button');
     if(!t) return;
-    if(t.dataset.day){ state.day = t.dataset.day; render(); deferAudio(sfxClick); return; }
+    if(t.dataset.day){ clearAutoAdvance(); state.day = t.dataset.day; render(); deferAudio(sfxClick); return; }
     if(t.dataset.tab){
+      clearAutoAdvance();
       state.tab = t.dataset.tab;
       if(t.dataset.tab === 'recorrido'){ state.step = 0; localStorage.setItem('rc_step','0'); }
       render();
@@ -981,6 +1001,7 @@
     }
     if(t.dataset.chooseFranja){ chooseFranja(t.dataset.chooseFranja, t.dataset.chooseValue); return; }
     if(t.dataset.jump){
+      clearAutoAdvance();
       state.tab = 'recorrido';
       state.step = findStepIndexForFranja(t.dataset.jump);
       localStorage.setItem('rc_step', String(state.step));
@@ -992,6 +1013,7 @@
     if(t.dataset.action==='next'){ gotoStep(state.step+1); deferAudio(sfxClick); return; }
     if(t.dataset.action==='finish'){ state.tab = 'resultados'; render(); deferAudio(sfxClick); return; }
     if(t.dataset.action==='skip'){
+      clearAutoAdvance();
       state.onboarded = true; localStorage.setItem('rc_onboarded','1');
       state.tab = 'resultados'; render(); return;
     }
@@ -1027,7 +1049,7 @@
     deriveVotesByArtist();
     render();
     if(next !== null){
-      deferAudio(next === 'draw' ? sfxDraw : (next === 'none' ? sfxNone : sfxChoose));
+      deferAudio(next === 'draw' ? sfxDraw : (next === 'none' ? sfxClick : sfxChoose));
       buzz(15);
       requestAnimationFrame(function(){
         var els = document.querySelectorAll('[data-choose-franja][data-choose-value]');
@@ -1039,6 +1061,9 @@
           }
         });
       });
+      maybeAutoAdvance(franjaId);
+    } else {
+      clearAutoAdvance();
     }
     if(!client) return;
     try{
